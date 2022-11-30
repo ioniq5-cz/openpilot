@@ -8,10 +8,12 @@ from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.car.hyundai.values import HyundaiFlags, DBC, FEATURES, CAMERA_SCC_CAR, CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
 from selfdrive.car.interfaces import CarStateBase
+from selfdrive.controls.lib.drive_helpers import VCruiseHelper, V_CRUISE_INITIAL
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
 
+#VCruiseHelper.update_v_cruise()
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -198,6 +200,11 @@ class CarState(CarStateBase):
 
     ret.cruiseState.available = True
     self.is_metric = cp.vl["CLUSTER_INFO"]["DISTANCE_UNIT"] != 1
+    self.v_cruise_kph = 12
+    self.v_cruise_cluster_kph = 13
+    ret.v_cruise_kph = 12
+    ret.v_cruise_cluster_kph = 13
+    #VCruiseHelper.update_v_cruise()
     if not self.CP.openpilotLongitudinalControl:
       speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
       cp_cruise_info = cp_cam if self.CP.flags & HyundaiFlags.CANFD_CAMERA_SCC else cp
