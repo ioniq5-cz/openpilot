@@ -29,6 +29,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.locationd.calibrationd import Calibration
 from system.hardware import HARDWARE
 from selfdrive.manager.process_config import managed_processes
+from selfdrive.car.hyundai.speedlimit import VolkswagenSpeedlimits
 
 SOFT_DISABLE_TIME = 3  # seconds
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
@@ -467,6 +468,15 @@ class Controls:
     """Compute conditional state transitions and execute actions on state transitions"""
 
     self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric)
+
+    # if stock cruise is completely disabled, then we can use our own set speed logic
+    if not self.CP.pcmCruise:
+      self.v_cruise_kph = VolkswagenSpeedlimits.update_cruise_buttons(self.v_cruise_kph, CS.buttonEvents, self.button_timers, self.enabled, self.is_metric, CS)
+    else:
+      if CS.cruiseState.available:
+        self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+      else:
+        self.v_cruise_kph = 0
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
