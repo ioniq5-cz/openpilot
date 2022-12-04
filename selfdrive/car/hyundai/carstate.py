@@ -9,6 +9,7 @@ from opendbc.can.can_define import CANDefine
 from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, FEATURES, CAMERA_SCC_CAR, CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
 from selfdrive.car.interfaces import CarStateBase
 from selfdrive.controls.lib.drive_helpers import VCruiseHelper, V_CRUISE_INITIAL
+from selfdrive.car.hyundai.speedlimit import VolkswagenSpeedlimits
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
@@ -235,7 +236,34 @@ class CarState(CarStateBase):
         if self.CP.flags & HyundaiFlags.CANFD_HDA2:
             self.cam_0x2a4 = copy.copy(cp_cam.vl["CAM_0x2a4"])
 
+        self._update_traffic_signals(cp_cruise_info)
+        VolkswagenSpeedlimits.update_cruise_buttons(CS, self._calculate_speed_limit(), self.buttons_counter)
+
         return ret
+
+    def _init_traffic_signals(self):
+        self._spdval1 = None
+
+    def _update_traffic_signals(self, cp_cruise_info):
+        spdval1 = cp_cruise_info.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_3"]
+        has_changed = spdval1 != self._spdval1
+        self._spdval1 = spdval1
+
+        if not has_changed:
+            return
+
+        print('---- TRAFFIC SIGNAL UPDATE -----')
+        if spdval1 is not None and spdval1 != 0:
+            print(f'SPDVAL1: {spdval1}')
+        print('------------------------')
+
+    def _calculate_speed_limit(self):
+        speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
+        if self._spdval1 != 0 and not None:
+            return self._spdval1 * speed_factor
+        return 0
+
+
 
     @staticmethod
     def get_can_parser(CP):
@@ -464,6 +492,8 @@ class CarState(CarStateBase):
 
             ("DRIVER_DOOR_OPEN", "DOORS_SEATBELTS"),
             ("DRIVER_SEATBELT_LATCHED", "DOORS_SEATBELTS"),
+
+            ("SPEED_LIMIT_3", "CLUSTER_SPEED_LIMIT"),
         ]
 
         if CP.carFingerprint == CAR.KIA_SORENTO_PHEV_4TH_GEN:
@@ -476,6 +506,7 @@ class CarState(CarStateBase):
             ("MDPS", 100),
             ("TCS", 50),
             (cruise_btn_msg, 50),
+            ("CLUSTER_SPEED_LIMIT", 10),
             ("CLUSTER_INFO", 4),
             ("BLINKERS", 4),
             ("DOORS_SEATBELTS", 4),
