@@ -8,14 +8,9 @@ from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, FEATURES, CAMERA_SCC_CAR, CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.controls.lib.drive_helpers import VCruiseHelper, V_CRUISE_INITIAL
-from selfdrive.car.hyundai.speedlimit import VolkswagenSpeedlimits
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
-
-# VCruiseHelper.update_v_cruise()
-
 
 class CarState(CarStateBase):
     def __init__(self, CP):
@@ -236,8 +231,8 @@ class CarState(CarStateBase):
         if self.CP.flags & HyundaiFlags.CANFD_HDA2:
             self.cam_0x2a4 = copy.copy(cp_cam.vl["CAM_0x2a4"])
 
-        self._update_traffic_signals(cp_cruise_info)
-        VolkswagenSpeedlimits.update_cruise_buttons(CS, self._calculate_speed_limit(), self.buttons_counter)
+        #self._update_traffic_signals(cp_cruise_info)
+        #self._calculate_speed_limit()
 
         return ret
 
